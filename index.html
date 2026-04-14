@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador FIDC</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f0f0f;
+  --surface: #181818;
+  --surface2: #212121;
+  --border: rgba(255,255,255,0.08);
+  --border2: rgba(255,255,255,0.15);
+  --text: #f0f0f0;
+  --muted: #888;
+  --faint: #555;
+  --green: #4ade80;
+  --green-bg: rgba(74,222,128,0.08);
+  --red: #f87171;
+  --red-bg: rgba(248,113,113,0.08);
+  --amber: #fbbf24;
+  --amber-bg: rgba(251,191,36,0.08);
+  --accent: #4ade80;
+  --radius: 8px;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'IBM Plex Sans', sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;min-height:100vh;line-height:1.6}
+
+/* layout */
+.shell{max-width:900px;margin:0 auto;padding:2rem 1.5rem 4rem}
+
+/* header */
+.header{margin-bottom:2.5rem;padding-bottom:1.5rem;border-bottom:1px solid var(--border)}
+.header h1{font-family:var(--mono);font-size:18px;font-weight:500;letter-spacing:.02em;color:var(--text)}
+.header h1 span{color:var(--accent)}
+.header p{font-size:13px;color:var(--muted);margin-top:4px}
+
+/* tabs */
+.tabs{display:flex;gap:0;margin-bottom:2rem;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;width:fit-content}
+.tab{font-family:var(--mono);font-size:12px;padding:8px 20px;border:none;background:transparent;color:var(--muted);cursor:pointer;letter-spacing:.04em;transition:all .15s}
+.tab:not(:last-child){border-right:1px solid var(--border)}
+.tab.active{background:var(--surface2);color:var(--text)}
+.tab:hover:not(.active){color:var(--text);background:rgba(255,255,255,0.03)}
+.panel{display:none}.panel.active{display:block}
+
+/* section label */
+.section-label{font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--faint);text-transform:uppercase;margin:2rem 0 .75rem}
+
+/* card */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem 1.5rem;margin-bottom:1rem}
+.card-label{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--faint);text-transform:uppercase;margin-bottom:1rem}
+
+/* slider rows */
+.slider-row{display:flex;align-items:center;gap:12px;margin-bottom:.85rem}
+.slider-row:last-child{margin-bottom:0}
+.slider-row label{font-size:13px;color:var(--muted);width:260px;flex-shrink:0;line-height:1.4}
+.slider-row label .hint{display:block;font-size:11px;color:var(--faint);font-style:italic;margin-top:1px}
+.slider-row input[type=range]{flex:1;-webkit-appearance:none;appearance:none;height:2px;background:var(--border2);border-radius:2px;outline:none;cursor:pointer}
+.slider-row input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);cursor:pointer;transition:transform .1s}
+.slider-row input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.2)}
+.slider-row .val{font-family:var(--mono);font-size:12px;font-weight:500;min-width:88px;text-align:right;color:var(--text)}
+
+/* metrics grid */
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.25rem}
+.metrics.cols3{grid-template-columns:repeat(3,1fr)}
+.metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:.875rem 1rem}
+.metric-label{font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:var(--faint);margin-bottom:6px;text-transform:uppercase}
+.metric-value{font-family:var(--mono);font-size:18px;font-weight:500;color:var(--text)}
+.metric-value.pos{color:var(--green)}
+.metric-value.neg{color:var(--red)}
+.metric-value.warn{color:var(--amber)}
+
+/* DRE rows */
+.dre-row{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px}
+.dre-row:last-child{border:none}
+.dre-row .lbl{color:var(--muted)}
+.dre-row .amt{font-family:var(--mono);font-size:12px;color:var(--text)}
+.dre-row.total .lbl{color:var(--text);font-weight:500}
+.dre-row.total .amt{font-family:var(--mono);font-size:13px;font-weight:500;color:var(--text)}
+.dre-row.pos-row .amt{color:var(--green)}
+.dre-row.neg-row .amt{color:var(--red)}
+.dre-spacer{height:10px}
+
+/* grid 2 */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1rem}
+
+/* badge */
+.badge{display:inline-block;font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:4px;margin-left:8px;letter-spacing:.04em}
+.badge.ok{background:var(--green-bg);color:var(--green)}
+.badge.warn{background:var(--amber-bg);color:var(--amber)}
+.badge.bad{background:var(--red-bg);color:var(--red)}
+
+/* faixas */
+.faixas-header{display:grid;grid-template-columns:1fr 1fr 1fr 28px;gap:8px;margin-bottom:6px}
+.faixas-header span{font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:var(--faint);text-transform:uppercase}
+.faixa-row{display:grid;grid-template-columns:1fr 1fr 1fr 28px;gap:8px;align-items:center;margin-bottom:6px}
+.faixa-row input{width:100%;padding:5px 8px;font-size:12px;font-family:var(--mono);border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text);outline:none}
+.faixa-row input:focus{border-color:var(--border2)}
+.btn-del{width:26px;height:26px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--faint);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center}
+.btn-del:hover{color:var(--red);border-color:var(--red)}
+.btn-add{font-family:var(--mono);font-size:11px;padding:6px 14px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--muted);cursor:pointer;letter-spacing:.04em;margin-top:6px}
+.btn-add:hover{color:var(--text);border-color:var(--border2)}
+
+/* faixa table */
+.faixa-table{width:100%;border-collapse:collapse;font-size:12px}
+.faixa-table th{font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:var(--faint);text-transform:uppercase;text-align:left;padding:5px 8px;border-bottom:1px solid var(--border)}
+.faixa-table td{padding:7px 8px;border-bottom:1px solid var(--border);font-family:var(--mono)}
+.faixa-table tr:last-child td{border:none}
+.faixa-table tr.ativa td{color:var(--green)}
+.tag-ativa{background:var(--green-bg);color:var(--green);font-size:10px;padding:2px 7px;border-radius:4px}
+.tag-off{color:var(--faint)}
+
+/* subtabs */
+.subtabs{display:flex;gap:6px;margin-bottom:1.25rem}
+.subtab{font-family:var(--mono);font-size:11px;padding:5px 14px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--faint);cursor:pointer;letter-spacing:.04em}
+.subtab.active{background:var(--surface2);color:var(--text);border-color:var(--border2)}
+.subtab:hover:not(.active){color:var(--muted)}
+.subpanel{display:none}.subpanel.active{display:block}
+
+/* compare table */
+.cmp-table{width:100%;border-collapse:collapse;font-size:12px}
+.cmp-table th{font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:var(--faint);text-transform:uppercase;text-align:right;padding:6px 10px;border-bottom:1px solid var(--border)}
+.cmp-table th:first-child{text-align:left}
+.cmp-table td{padding:7px 10px;border-bottom:1px solid var(--border);text-align:right;font-family:var(--mono);font-size:12px;color:var(--muted)}
+.cmp-table td:first-child{text-align:left;color:var(--muted)}
+.cmp-table tr:last-child td{border:none;color:var(--text);font-weight:500}
+.cmp-table .pos{color:var(--green)}
+.cmp-table .neg{color:var(--red)}
+
+/* footer */
+.footer{margin-top:3rem;padding-top:1.5rem;border-top:1px solid var(--border);font-family:var(--mono);font-size:11px;color:var(--faint);text-align:center;letter-spacing:.04em}
+
+@media(max-width:640px){
+  .metrics{grid-template-columns:1fr 1fr}
+  .metrics.cols3{grid-template-columns:1fr 1fr}
+  .slider-row label{width:160px;font-size:12px}
+  .grid2{grid-template-columns:1fr}
+  .shell{padding:1.25rem 1rem 3rem}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <div class="header">
+    <h1>FIDC <span>//</span> Simulador financeiro</h1>
+    <p>Análise de gerentes de originação e novos aportes de capital</p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showMain('gerente',this)">Gerente</button>
+    <button class="tab" onclick="showMain('aporte',this)">Novo aporte</button>
+  </div>
+
+  <!-- ============================================================ GERENTE -->
+  <div id="main-gerente" class="panel active">
+
+    <div class="section-label">Parâmetros base do fundo</div>
+    <div class="card">
+      <div class="slider-row"><label>Custo de captação <span class="hint">% a.m.</span></label><input type="range" id="g-custoCap" min="0.5" max="3" step="0.05" value="1.2" oninput="calcG()"><span class="val" id="g-custoCap-v"></span></div>
+      <div class="slider-row"><label>Gestão + adm <span class="hint">% a.a.</span></label><input type="range" id="g-txGestao" min="0" max="1.5" step="0.05" value="1.0" oninput="calcG()"><span class="val" id="g-txGestao-v"></span></div>
+    </div>
+
+    <div class="section-label">Operações do gerente</div>
+    <div class="card">
+      <div class="slider-row"><label>Volume bruto operado no mês <span class="hint">R$</span></label><input type="range" id="g-volOp" min="100000" max="10000000" step="50000" value="2000000" oninput="calcG()"><span class="val" id="g-volOp-v"></span></div>
+      <div class="slider-row"><label>Taxa de desconto média <span class="hint">% flat</span></label><input type="range" id="g-taxaDesc" min="0.5" max="8" step="0.1" value="3.0" oninput="calcG()"><span class="val" id="g-taxaDesc-v"></span></div>
+      <div class="slider-row"><label>Prazo médio das operações <span class="hint">dias</span></label><input type="range" id="g-prazoMed" min="15" max="180" step="1" value="45" oninput="calcG()"><span class="val" id="g-prazoMed-v"></span></div>
+      <div class="slider-row"><label>Tarifas geradas <span class="hint">R$/mês</span></label><input type="range" id="g-tarifas" min="0" max="50000" step="500" value="5000" oninput="calcG()"><span class="val" id="g-tarifas-v"></span></div>
+    </div>
+
+    <div class="section-label">Remuneração do gerente</div>
+    <div class="card">
+      <div class="slider-row"><label>Salário fixo <span class="hint">R$/mês</span></label><input type="range" id="g-fixo" min="2000" max="20000" step="500" value="6000" oninput="calcG()"><span class="val" id="g-fixo-v"></span></div>
+      <div class="slider-row"><label>Comissão variável <span class="hint">% sobre receita ajustada</span></label><input type="range" id="g-comVar" min="0" max="30" step="0.5" value="8" oninput="calcG()"><span class="val" id="g-comVar-v"></span></div>
+      <div class="slider-row"><label>Comissão sobre tarifas <span class="hint">%</span></label><input type="range" id="g-comTarifa" min="0" max="30" step="0.5" value="5" oninput="calcG()"><span class="val" id="g-comTarifa-v"></span></div>
+    </div>
+
+    <div class="section-label">Faixas de bônus por carteira</div>
+    <div class="card">
+      <div class="faixas-header">
+        <span>Carteira mín. (R$)</span><span>Carteira máx. (R$)</span><span>Bônus fixo (R$)</span><span></span>
+      </div>
+      <div id="faixas-rows"></div>
+      <button class="btn-add" onclick="addFaixa()">+ faixa</button>
+    </div>
+
+    <div class="section-label">Resultado</div>
+    <div class="metrics" id="g-metrics"></div>
+
+    <div class="grid2">
+      <div class="card">
+        <div class="card-label">Receita ajustada — metas e comissão</div>
+        <div id="g-dre-receita"></div>
+      </div>
+      <div class="card">
+        <div class="card-label">Resultado financeiro — carteira × taxa</div>
+        <div id="g-dre-custo"></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:1rem">
+      <div class="card-label">Faixas de bônus</div>
+      <table class="faixa-table" id="g-faixa-table"></table>
+    </div>
+
+    <div class="card">
+      <div class="card-label">DRE do gerente</div>
+      <div id="g-dre"></div>
+    </div>
+
+  </div>
+
+  <!-- ============================================================ APORTE -->
+  <div id="main-aporte" class="panel">
+
+    <div class="section-label">Fundo base</div>
+    <div class="card">
+      <div class="slider-row"><label>Carteira atual do fundo <span class="hint">R$</span></label><input type="range" id="a-carteiraBase" min="1000000" max="100000000" step="500000" value="20000000" oninput="calcA()"><span class="val" id="a-carteiraBase-v"></span></div>
+      <div class="slider-row"><label>Taxa operada base <span class="hint">% flat</span></label><input type="range" id="a-taxaBase" min="0.5" max="8" step="0.1" value="3.0" oninput="calcA()"><span class="val" id="a-taxaBase-v"></span></div>
+      <div class="slider-row"><label>Prazo médio base <span class="hint">dias</span></label><input type="range" id="a-prazoBase" min="15" max="180" step="1" value="45" oninput="calcA()"><span class="val" id="a-prazoBase-v"></span></div>
+      <div class="slider-row"><label>Custo de captação base <span class="hint">% a.m.</span></label><input type="range" id="a-custoCapBase" min="0.5" max="3" step="0.05" value="1.2" oninput="calcA()"><span class="val" id="a-custoCapBase-v"></span></div>
+      <div class="slider-row"><label>Gestão + adm <span class="hint">% a.a.</span></label><input type="range" id="a-txGestao" min="0" max="1.5" step="0.05" value="1.0" oninput="calcA()"><span class="val" id="a-txGestao-v"></span></div>
+      <div class="slider-row"><label>Custos fixos mensais <span class="hint">R$/mês</span></label><input type="range" id="a-custosFixos" min="0" max="100000" step="1000" value="20000" oninput="calcA()"><span class="val" id="a-custosFixos-v"></span></div>
+    </div>
+
+    <div class="section-label">Novo aporte</div>
+    <div class="card">
+      <div class="slider-row"><label>Valor do aporte <span class="hint">R$</span></label><input type="range" id="a-aporte" min="100000" max="30000000" step="100000" value="5000000" oninput="calcA()"><span class="val" id="a-aporte-v"></span></div>
+      <div class="slider-row"><label>Custo de captação do aporte <span class="hint">% a.m.</span></label><input type="range" id="a-custoCapAporte" min="0.5" max="3" step="0.05" value="1.5" oninput="calcA()"><span class="val" id="a-custoCapAporte-v"></span></div>
+      <div class="slider-row"><label>Taxa operada no aporte <span class="hint">% flat</span></label><input type="range" id="a-taxaAporte" min="0.5" max="8" step="0.1" value="3.0" oninput="calcA()"><span class="val" id="a-taxaAporte-v"></span></div>
+      <div class="slider-row"><label>Comissão de originação <span class="hint">% a.a. sobre o aporte — cobrada mensalmente (÷ 12)</span></label><input type="range" id="a-comOrig" min="0" max="3" step="0.05" value="0.5" oninput="calcA()"><span class="val" id="a-comOrig-v"></span></div>
+    </div>
+
+    <div class="section-label">Resultado do aporte</div>
+    <div class="subtabs">
+      <button class="subtab active" onclick="showSub('isolado',this)">Isolado</button>
+      <button class="subtab" onclick="showSub('incremental',this)">Impacto no fundo</button>
+      <button class="subtab" onclick="showSub('comparativo',this)">Comparativo</button>
+    </div>
+
+    <div id="sub-isolado" class="subpanel active">
+      <div class="metrics" id="a-metrics-iso"></div>
+      <div class="card">
+        <div class="card-label">DRE do aporte — isolado</div>
+        <div id="a-dre-iso"></div>
+      </div>
+    </div>
+
+    <div id="sub-incremental" class="subpanel">
+      <div class="metrics cols3" id="a-metrics-inc"></div>
+      <div class="card">
+        <div class="card-label">Impacto incremental no fundo</div>
+        <div id="a-dre-inc"></div>
+      </div>
+    </div>
+
+    <div id="sub-comparativo" class="subpanel">
+      <div class="card">
+        <div class="card-label">Sem aporte vs com aporte</div>
+        <table class="cmp-table" id="a-cmp-table"></table>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="footer">simulador fidc — uso interno</div>
+</div>
+
+<script>
+// ─── utils ────────────────────────────────────────────────────────────────────
+function fmt(v){return'R$ '+Math.round(v).toLocaleString('pt-BR')}
+function fmtPct(v){return(+v).toFixed(2)+'%'}
+function dRow(lbl,amt,cls){
+  return'<div class="dre-row '+(cls||'')+'"><span class="lbl">'+lbl+'</span><span class="amt">'+amt+'</span></div>'
+}
+function metCard(label,value,cls){
+  return'<div class="metric"><div class="metric-label">'+label+'</div><div class="metric-value '+(cls||'')+'">'+value+'</div></div>'
+}
+function showMain(id,el){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'))
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'))
+  document.getElementById('main-'+id).classList.add('active')
+  el.classList.add('active')
+}
+function showSub(id,el){
+  document.querySelectorAll('.subtab').forEach(b=>b.classList.remove('active'))
+  document.querySelectorAll('.subpanel').forEach(p=>p.classList.remove('active'))
+  document.getElementById('sub-'+id).classList.add('active')
+  el.classList.add('active')
+}
+
+// ─── faixas ───────────────────────────────────────────────────────────────────
+var faixas=[
+  {min:0,max:1000000,bonus:0},
+  {min:1000000,max:2000000,bonus:1000},
+  {min:2000000,max:4000000,bonus:2500},
+  {min:4000000,max:999999999,bonus:5000}
+]
+function renderFaixas(){
+  var h=''
+  faixas.forEach(function(f,i){
+    h+='<div class="faixa-row">'
+      +'<input type="number" value="'+f.min+'" onchange="updateFaixa('+i+',\'min\',this.value)">'
+      +'<input type="number" value="'+(f.max>=999999999?'':f.max)+'" onchange="updateFaixa('+i+',\'max\',this.value)" placeholder="sem limite">'
+      +'<input type="number" value="'+f.bonus+'" onchange="updateFaixa('+i+',\'bonus\',this.value)">'
+      +'<button class="btn-del" onclick="delFaixa('+i+')">×</button>'
+      +'</div>'
+  })
+  document.getElementById('faixas-rows').innerHTML=h
+}
+function updateFaixa(i,k,v){
+  if(k==='max'&&(v===''||+v===0))faixas[i].max=999999999
+  else faixas[i][k]=+v||0
+  calcG()
+}
+function addFaixa(){faixas.push({min:0,max:999999999,bonus:0});renderFaixas();calcG()}
+function delFaixa(i){if(faixas.length>1){faixas.splice(i,1);renderFaixas();calcG()}}
+
+// ─── GERENTE ──────────────────────────────────────────────────────────────────
+function calcG(){
+  var custoCap=+document.getElementById('g-custoCap').value/100
+  var txGestaoAa=+document.getElementById('g-txGestao').value/100
+  var txGestao=txGestaoAa/12
+  var volOp=+document.getElementById('g-volOp').value
+  var taxaDesc=+document.getElementById('g-taxaDesc').value/100
+  var prazo=+document.getElementById('g-prazoMed').value
+  var tarifas=+document.getElementById('g-tarifas').value
+  var fixo=+document.getElementById('g-fixo').value
+  var comVar=+document.getElementById('g-comVar').value/100
+  var comTarifa=+document.getElementById('g-comTarifa').value/100
+
+  document.getElementById('g-custoCap-v').textContent=fmtPct(custoCap*100)
+  document.getElementById('g-txGestao-v').textContent=fmtPct(txGestaoAa*100)
+  document.getElementById('g-volOp-v').textContent=fmt(volOp)
+  document.getElementById('g-taxaDesc-v').textContent=fmtPct(taxaDesc*100)
+  document.getElementById('g-prazoMed-v').textContent=prazo+' dias'
+  document.getElementById('g-tarifas-v').textContent=fmt(tarifas)
+  document.getElementById('g-fixo-v').textContent=fmt(fixo)
+  document.getElementById('g-comVar-v').textContent=fmtPct(comVar*100)
+  document.getElementById('g-comTarifa-v').textContent=fmtPct(comTarifa*100)
+
+  // receita ajustada (metas/comissão)
+  var recBrutaOp=volOp*taxaDesc/(1+taxaDesc)
+  var recAjustada=recBrutaOp/prazo*30
+
+  // carteira e taxa mensal equivalente
+  var vlPago=volOp/(1+taxaDesc)
+  var carteira=vlPago*prazo/30
+  var taxaMensal=Math.pow(1+taxaDesc,30/prazo)-1
+
+  // resultado financeiro
+  var recFinanceira=carteira*taxaMensal
+  var custoCaptCarteira=carteira*custoCap
+  var gestao=carteira*txGestao
+  var spreadFinanceiro=recFinanceira-custoCaptCarteira-gestao
+
+  // comissões sobre receita ajustada
+  var comVarVal=recAjustada*comVar
+  var comTarifaVal=tarifas*comTarifa
+
+  // bônus
+  var bonusAtual=0, faixaIdx=-1
+  faixas.forEach(function(f,i){if(carteira>=f.min&&carteira<f.max){bonusAtual=f.bonus;faixaIdx=i}})
+
+  var custoGerente=fixo+comVarVal+comTarifaVal+bonusAtual
+  var resultado=spreadFinanceiro+tarifas-custoGerente
+  var margem=recFinanceira>0?resultado/recFinanceira:0
+
+  // metrics
+  document.getElementById('g-metrics').innerHTML=
+    metCard('Receita ajustada (metas)',fmt(recAjustada))+
+    metCard('Carteira gerada',fmt(carteira))+
+    metCard('Spread financeiro',fmt(spreadFinanceiro),spreadFinanceiro>0?'pos':'neg')+
+    metCard('Resultado líquido',fmt(resultado),resultado>0?'pos':resultado>-500?'warn':'neg')
+
+  // quadrinho receita ajustada
+  document.getElementById('g-dre-receita').innerHTML=
+    dRow('Volume bruto operado',fmt(volOp))+
+    dRow('Taxa de desconto (flat)',fmtPct(taxaDesc*100))+
+    dRow('Receita bruta op (VB × taxa ÷ (1+taxa))',fmt(recBrutaOp))+
+    dRow('Prazo médio',prazo+' dias')+
+    dRow('Receita ajustada (÷ prazo × 30)',fmt(recAjustada),'total')+
+    '<div class="dre-spacer"></div>'+
+    dRow('Uso: base de comissão e metas','—')
+
+  // quadrinho financeiro
+  document.getElementById('g-dre-custo').innerHTML=
+    dRow('VL pago ao cedente',fmt(vlPago))+
+    dRow('Prazo médio',prazo+' dias')+
+    dRow('Carteira (VL × prazo ÷ 30)',fmt(carteira),'total')+
+    '<div class="dre-spacer"></div>'+
+    dRow('Taxa mensal equiv. ((1+taxa)^(30/p)−1)',fmtPct(taxaMensal*100))+
+    dRow('Receita financeira (carteira × taxa)',fmt(recFinanceira),'total')+
+    '<div class="dre-spacer"></div>'+
+    dRow('(−) Custo captação ('+fmtPct(custoCap*100)+' a.m.)',fmt(custoCaptCarteira),'neg-row')+
+    dRow('(−) Gestão + adm ('+fmtPct(txGestaoAa*100)+' a.a.)',fmt(gestao),'neg-row')+
+    dRow('Spread financeiro',fmt(spreadFinanceiro),'total '+(spreadFinanceiro>0?'pos-row':'neg-row'))
+
+  // faixa table
+  var th='<thead><tr><th>Faixa de carteira</th><th>Bônus</th><th></th></tr></thead><tbody>'
+  var tb=faixas.map(function(f,i){
+    var ativa=i===faixaIdx
+    var maxLbl=f.max>=999999999?'acima':fmt(f.max)
+    return'<tr class="'+(ativa?'ativa':'')+'"><td>'+fmt(f.min)+' – '+maxLbl+'</td><td>'+fmt(f.bonus)+'</td>'
+      +'<td>'+(ativa?'<span class="tag-ativa">ativa</span>':'<span class="tag-off">—</span>')+'</td></tr>'
+  }).join('')
+  document.getElementById('g-faixa-table').innerHTML=th+tb+'</tbody>'
+
+  // DRE gerente
+  var bdg=resultado>0?'<span class="badge ok">positivo</span>':resultado>-500?'<span class="badge warn">apertado</span>':'<span class="badge bad">negativo</span>'
+  document.getElementById('g-dre').innerHTML=
+    dRow('(+) Receita financeira (carteira × taxa mensal)',fmt(recFinanceira))+
+    dRow('(+) Tarifas',fmt(tarifas))+
+    dRow('(−) Custo de captação sobre carteira',fmt(custoCaptCarteira),'neg-row')+
+    dRow('(−) Gestão + adm sobre carteira',fmt(gestao),'neg-row')+
+    dRow('Spread disponível',fmt(spreadFinanceiro+tarifas),'total')+
+    '<div class="dre-spacer"></div>'+
+    dRow('(−) Salário fixo',fmt(fixo),'neg-row')+
+    dRow('(−) Comissão variável ('+fmtPct(comVar*100)+' × rec. ajustada)',fmt(comVarVal),'neg-row')+
+    dRow('(−) Comissão sobre tarifas ('+fmtPct(comTarifa*100)+')',fmt(comTarifaVal),'neg-row')+
+    dRow('(−) Bônus carteira (faixa ativa)',fmt(bonusAtual),'neg-row')+
+    dRow('Total custo do gerente',fmt(custoGerente),'total neg-row')+
+    dRow('Resultado líquido mensal '+bdg,fmt(resultado),'total '+(resultado>0?'pos-row':'neg-row'))+
+    dRow('Margem sobre receita financeira',fmtPct(margem*100))
+}
+
+// ─── APORTE ───────────────────────────────────────────────────────────────────
+function calcA(){
+  var carteiraBase=+document.getElementById('a-carteiraBase').value
+  var taxaBase=+document.getElementById('a-taxaBase').value/100
+  var prazoBase=+document.getElementById('a-prazoBase').value
+  var custoCapBase=+document.getElementById('a-custoCapBase').value/100
+  var txGestaoAa=+document.getElementById('a-txGestao').value/100
+  var custosFixos=+document.getElementById('a-custosFixos').value
+  var aporte=+document.getElementById('a-aporte').value
+  var custoCapAporte=+document.getElementById('a-custoCapAporte').value/100
+  var taxaAporte=+document.getElementById('a-taxaAporte').value/100
+  var comOrigAa=+document.getElementById('a-comOrig').value/100
+
+  document.getElementById('a-carteiraBase-v').textContent=fmt(carteiraBase)
+  document.getElementById('a-taxaBase-v').textContent=fmtPct(taxaBase*100)
+  document.getElementById('a-prazoBase-v').textContent=prazoBase+' dias'
+  document.getElementById('a-custoCapBase-v').textContent=fmtPct(custoCapBase*100)
+  document.getElementById('a-txGestao-v').textContent=fmtPct(txGestaoAa*100)
+  document.getElementById('a-custosFixos-v').textContent=fmt(custosFixos)
+  document.getElementById('a-aporte-v').textContent=fmt(aporte)
+  document.getElementById('a-custoCapAporte-v').textContent=fmtPct(custoCapAporte*100)
+  document.getElementById('a-taxaAporte-v').textContent=fmtPct(taxaAporte*100)
+  document.getElementById('a-comOrig-v').textContent=fmtPct(comOrigAa*100)+' a.a.'
+
+  var comOrigMensal=aporte*(comOrigAa/12)
+
+  // fundo base
+  var txBaseM=Math.pow(1+taxaBase,30/prazoBase)-1
+  var recBase=carteiraBase*txBaseM
+  var custoCaptBase=carteiraBase*custoCapBase
+  var gestaoBase=carteiraBase*(txGestaoAa/12)
+  var resultadoBase=recBase-custoCaptBase-gestaoBase-custosFixos
+
+  // aporte
+  var txAporteM=Math.pow(1+taxaAporte,30/prazoBase)-1
+  var recAporte=aporte*txAporteM
+  var custoCaptAp=aporte*custoCapAporte
+  var gestaoAp=aporte*(txGestaoAa/12)
+  var spreadAporte=recAporte-custoCaptAp-gestaoAp
+  var resultadoAporte=spreadAporte-comOrigMensal
+  var margemAporte=recAporte>0?resultadoAporte/recAporte:0
+  var spreadPct=txAporteM-custoCapAporte-(txGestaoAa/12)-(comOrigAa/12)
+
+  // consolidado
+  var recTotal=recBase+recAporte
+  var custoCaptTotal=custoCaptBase+custoCaptAp
+  var gestaoTotal=(carteiraBase+aporte)*(txGestaoAa/12)
+  var resultadoTotal=recTotal-custoCaptTotal-gestaoTotal-custosFixos-comOrigMensal
+  var delta=resultadoTotal-resultadoBase
+
+  // isolado
+  var bdg=resultadoAporte>0?'<span class="badge ok">positivo</span>':resultadoAporte>-1000?'<span class="badge warn">apertado</span>':'<span class="badge bad">negativo</span>'
+  document.getElementById('a-metrics-iso').innerHTML=
+    metCard('Receita financeira do aporte',fmt(recAporte))+
+    metCard('Spread líquido',fmt(spreadAporte),spreadAporte>0?'pos':'neg')+
+    metCard('Resultado após comissão orig.',fmt(resultadoAporte),resultadoAporte>0?'pos':'neg')+
+    metCard('Margem sobre receita',fmtPct(margemAporte*100),margemAporte>0.1?'pos':margemAporte>0?'warn':'neg')
+
+  document.getElementById('a-dre-iso').innerHTML=
+    dRow('Valor do aporte (carteira)',fmt(aporte))+
+    dRow('Taxa mensal equiv. ((1+taxa)^(30/prazo)−1)',fmtPct(txAporteM*100))+
+    dRow('(+) Receita financeira (carteira × taxa mensal)',fmt(recAporte))+
+    dRow('(−) Custo de captação ('+fmtPct(custoCapAporte*100)+' a.m.)',fmt(custoCaptAp),'neg-row')+
+    dRow('(−) Gestão + adm ('+fmtPct(txGestaoAa*100)+' a.a. ÷ 12)',fmt(gestaoAp),'neg-row')+
+    dRow('Spread financeiro líquido',fmt(spreadAporte),'total '+(spreadAporte>0?'pos-row':'neg-row'))+
+    dRow('(−) Comissão originação ('+fmtPct(comOrigAa*100)+' a.a. ÷ 12 × aporte)',fmt(comOrigMensal),'neg-row')+
+    dRow('Resultado líquido mensal '+bdg,fmt(resultadoAporte),'total '+(resultadoAporte>0?'pos-row':'neg-row'))+
+    dRow('Spread all-in (taxa − cap. − gestão − orig.)',fmtPct(spreadPct*100))+
+    dRow('Margem sobre receita financeira',fmtPct(margemAporte*100))
+
+  // incremental
+  var bdgInc=delta>0?'<span class="badge ok">melhora</span>':'<span class="badge bad">piora</span>'
+  document.getElementById('a-metrics-inc').innerHTML=
+    metCard('Resultado sem aporte',fmt(resultadoBase),resultadoBase>0?'pos':'neg')+
+    metCard('Resultado com aporte',fmt(resultadoTotal),resultadoTotal>0?'pos':'neg')+
+    metCard('Impacto incremental',(delta>=0?'+':'')+fmt(delta),delta>0?'pos':'neg')
+
+  document.getElementById('a-dre-inc').innerHTML=
+    dRow('Receita financeira base',fmt(recBase))+
+    dRow('(+) Receita financeira do aporte',fmt(recAporte),'pos-row')+
+    dRow('Receita total combinada',fmt(recTotal),'total')+
+    dRow('(−) Custo captação base',fmt(custoCaptBase),'neg-row')+
+    dRow('(−) Custo captação aporte',fmt(custoCaptAp),'neg-row')+
+    dRow('(−) Gestão + adm total',fmt(gestaoTotal),'neg-row')+
+    dRow('(−) Custos fixos (inalterados)',fmt(custosFixos),'neg-row')+
+    dRow('(−) Comissão originação ('+fmtPct(comOrigAa*100)+' a.a. ÷ 12)',fmt(comOrigMensal),'neg-row')+
+    dRow('Resultado com aporte',fmt(resultadoTotal),'total '+(resultadoTotal>0?'pos-row':'neg-row'))+
+    dRow('Resultado sem aporte',fmt(resultadoBase))+
+    dRow('Impacto incremental '+bdgInc,(delta>=0?'+':'')+fmt(delta),'total '+(delta>0?'pos-row':'neg-row'))
+
+  // comparativo
+  var rows=[
+    ['Carteira total',carteiraBase,carteiraBase+aporte],
+    ['Receita financeira',recBase,recTotal],
+    ['Custo de captação',custoCaptBase,custoCaptTotal],
+    ['Gestão + adm',gestaoBase,gestaoTotal],
+    ['Custos fixos',custosFixos,custosFixos],
+    ['Comissão originação',0,comOrigMensal],
+    ['Resultado líquido',resultadoBase,resultadoTotal]
+  ]
+  var th='<thead><tr><th>Item</th><th>Sem aporte</th><th>Com aporte</th><th>Variação</th></tr></thead><tbody>'
+  var tb=rows.map((r,i)=>{
+    var isLast=i===rows.length-1
+    var diff=Math.round(r[2]-r[1])
+    var diffStr=(diff>=0?'+':'-')+' R$ '+Math.abs(diff).toLocaleString('pt-BR')
+    var cls=isLast?(diff>0?'pos':'neg'):''
+    return'<tr><td>'+r[0]+'</td><td>'+fmt(r[1])+'</td><td>'+fmt(r[2])+'</td><td class="'+cls+'">'+diffStr+'</td></tr>'
+  }).join('')
+  document.getElementById('a-cmp-table').innerHTML=th+tb+'</tbody>'
+}
+
+// ─── init ─────────────────────────────────────────────────────────────────────
+renderFaixas()
+calcG()
+calcA()
+</script>
+</body>
+</html>
