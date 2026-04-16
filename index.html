@@ -209,23 +209,23 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14
 
     <div class="section-label">Parâmetros base do fundo</div>
     <div class="card">
-      <div class="slider-row"><label>Custo de captação <span class="hint">% a.m.</span></label><input type="range" id="g-custoCap" min="0.5" max="3" step="0.05" value="1.2" oninput="calcG()"><span class="val" id="g-custoCap-v"></span></div>
-      <div class="slider-row"><label>Gestão + adm <span class="hint">% a.a.</span></label><input type="range" id="g-txGestao" min="0" max="1.5" step="0.05" value="1.0" oninput="calcG()"><span class="val" id="g-txGestao-v"></span></div>
+      <div class="slider-row"><label>Custo de captação <span class="hint">% a.m.</span></label><input type="range" id="g-custoCap" min="0.5" max="3" step="0.05" value="1.3" oninput="calcG()"><span class="val" id="g-custoCap-v"></span></div>
+      <div class="slider-row"><label>Gestão + adm <span class="hint">% a.a.</span></label><input type="range" id="g-txGestao" min="0" max="1.5" step="0.05" value="0.3" oninput="calcG()"><span class="val" id="g-txGestao-v"></span></div>
     </div>
 
     <div class="section-label">Operações do gerente</div>
     <div class="card">
       <div class="slider-row"><label>Volume bruto operado no mês <span class="hint">R$</span></label><input type="range" id="g-volOp" min="100000" max="40000000" step="500000" value="2000000" oninput="calcG()"><span class="val" id="g-volOp-v"></span></div>
-      <div class="slider-row"><label>Taxa de desconto média <span class="hint">% flat</span></label><input type="range" id="g-taxaDesc" min="0.5" max="8" step="0.1" value="3.0" oninput="calcG()"><span class="val" id="g-taxaDesc-v"></span></div>
+      <div class="slider-row"><label>Taxa de desconto média <span class="hint">% flat</span></label><input type="range" id="g-taxaDesc" min="0.5" max="8" step="0.1" value="2.0" oninput="calcG()"><span class="val" id="g-taxaDesc-v"></span></div>
       <div class="slider-row"><label>Prazo médio das operações <span class="hint">dias</span></label><input type="range" id="g-prazoMed" min="15" max="180" step="1" value="45" oninput="calcG()"><span class="val" id="g-prazoMed-v"></span></div>
       <div class="slider-row"><label>Tarifas geradas <span class="hint">R$/mês</span></label><input type="range" id="g-tarifas" min="0" max="50000" step="500" value="5000" oninput="calcG()"><span class="val" id="g-tarifas-v"></span></div>
     </div>
 
     <div class="section-label">Remuneração do gerente</div>
     <div class="card">
-      <div class="slider-row"><label>Salário fixo <span class="hint">R$/mês</span></label><input type="range" id="g-fixo" min="2000" max="20000" step="500" value="6000" oninput="calcG()"><span class="val" id="g-fixo-v"></span></div>
-      <div class="slider-row"><label>Comissão variável <span class="hint">% sobre receita ajustada</span></label><input type="range" id="g-comVar" min="0" max="30" step="0.5" value="8" oninput="calcG()"><span class="val" id="g-comVar-v"></span></div>
-      <div class="slider-row"><label>Comissão sobre tarifas <span class="hint">%</span></label><input type="range" id="g-comTarifa" min="0" max="30" step="0.5" value="5" oninput="calcG()"><span class="val" id="g-comTarifa-v"></span></div>
+      <div class="slider-row"><label>Salário fixo <span class="hint">R$/mês</span></label><input type="range" id="g-fixo" min="2000" max="20000" step="500" value="8000" oninput="calcG()"><span class="val" id="g-fixo-v"></span></div>
+      <div class="slider-row"><label>Comissão variável <span class="hint">% sobre receita ajustada</span></label><input type="range" id="g-comVar" min="0" max="30" step="0.5" value="2" oninput="calcG()"><span class="val" id="g-comVar-v"></span></div>
+      <div class="slider-row"><label>Comissão sobre tarifas <span class="hint">%</span></label><input type="range" id="g-comTarifa" min="0" max="30" step="0.5" value="15" oninput="calcG()"><span class="val" id="g-comTarifa-v"></span></div>
     </div>
 
     <div class="section-label">Faixas de bônus por carteira</div>
